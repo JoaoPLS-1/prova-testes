@@ -7,7 +7,7 @@ import { validar } from '../framework-teste'
 // 2. Meia-entrada (estudante ou idoso 60+): 50% de desconto
 // 3. Sessão 3D: acréscimo de R$ 10,00 por ingresso
 // 4. Terça-feira (diaSemana === 2): 30% de desconto no valor base (aplicado ANTES da meia-entrada)
-// 5. Máximo de 6 ingressos por compra
+// 5. Máximo de 6 ingressos por compra -> esse é o if de borda 
 // 6. Menores de 16 anos não podem assistir na sessão 'noite'
 // 7. A classificação indicativa do filme deve ser respeitada (idade >= classificacao)
 
@@ -30,7 +30,7 @@ interface ICompraIngresso {
     filmeId: number
     sessao: 'manha' | 'tarde' | 'noite'
     diaSemana: number  // 0 = domingo, 1 = segunda, ..., 6 = sábado
-    espectadores: IEspectador[]
+    espectadores: IEspectador[] // Lista de espectadores para os quais os ingressos estão sendo comprados
 }
 
 interface IResultadoCompra {
@@ -49,13 +49,12 @@ const filmes: IFilme[] = [
     { id: 5, titulo: 'Ação Total', eh3D: false, classificacao: 16 },
 ]
 
-// ==================== FUNÇÃO A IMPLEMENTAR ====================
 
 function comprarIngressos(compra: ICompraIngresso): IResultadoCompra {
     // TODO: Implementar a lógica seguindo as regras de negócio
     //
     // Passos sugeridos:
-    // 1. Buscar o filme pelo filmeId
+
     // 2. Validar: máximo 6 espectadores, menores de 16 na sessão noite, classificação indicativa
     // 3. Para cada espectador, calcular o valor do ingresso:
     //    a. Valor base = R$ 40,00
@@ -64,10 +63,62 @@ function comprarIngressos(compra: ICompraIngresso): IResultadoCompra {
     //    d. Se sessão 3D: valor += R$ 10,00
     // 4. Somar todos os ingressos
 
+
+    const filme = filmes.find(f => f.id === compra.filmeId)
+    if (!filme) {
+        return { valorTotal: 0, quantidadeIngressos: 0, ehValida: false }
+    }
+
+    const quantidade = compra.espectadores.length
+
+    if (quantidade > 6) {
+        return { valorTotal: 0, quantidadeIngressos: quantidade, ehValida: false }
+    }
+
+    // Menor de 16 na sessão noite
+    const menorNaNoite = compra.espectadores.some(
+        e => compra.sessao === 'noite' && e.idade < 16
+    )
+
+    if (menorNaNoite) {
+        return { valorTotal: 0, quantidadeIngressos: quantidade, ehValida: false }
+    }
+
+    // Classificação indicativa
+    const violaClassificacao = compra.espectadores.some(
+        e => e.idade < filme.classificacao
+    )
+
+    if (violaClassificacao) {
+        return { valorTotal: 0, quantidadeIngressos: quantidade, ehValida: false }
+    }
+    let valorTotal = 0
+
+    for (const espectador of compra.espectadores) {
+        let valor = 40
+
+        // Terça-feira (ANTES de tudo)
+        if (compra.diaSemana === 2) {
+            valor *= 0.70
+        }
+
+        // Meia-entrada
+        if (espectador.ehEstudante || espectador.idade >= 60) {
+            valor *= 0.50
+        }
+
+        // 3D (depois dos descontos)
+        if (filme.eh3D) {
+            valor += 10
+        }
+
+        valorTotal += valor
+    }
+
     return {
-        valorTotal: 0,
-        quantidadeIngressos: 0,
-        ehValida: false
+        valorTotal,
+        quantidadeIngressos: quantidade,
+        ehValida: true
     }
 }
 
@@ -83,7 +134,17 @@ const teste1 = comprarIngressos({
     diaSemana: 3,
     espectadores: [{ nome: 'Carlos', idade: 25, ehEstudante: false }]
 })
-validar({ descricao: 'comprarIngressos() - Ingresso inteira dia normal 2D', atual: teste1.valorTotal, esperado: 40 })
+validar(
+    { 
+        descricao: 'comprarIngressos() - Ingresso inteira dia normal 2D', atual: teste1.valorTotal, esperado: 40 
+
+        
+    }
+)
+
+
+
+
 
 // Teste 2: Compra com meia-entrada para estudante
 // Filme: Comédia Romântica (id: 2, 2D)
