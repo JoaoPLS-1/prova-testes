@@ -55,36 +55,17 @@ const contas: IConta[] = [
 ]
 
 // ==================== FUNÇÕES A IMPLEMENTAR ====================
+   
 
-function depositar(dados: IDepositar): boolean {
-    // TODO: Implementar a lógica seguindo as regras de negócio
-    //
-    // Passos sugeridos:
-    // 1. Buscar a conta pelo contaId
-    // 2. Verificar se a conta existe e está ativa
-    // 3. Verificar se o valor é >= R$ 10,00
-    // 4. Adicionar o valor ao saldo da conta
-    // 5. Registrar a movimentação no extrato
 
-    return false
-}
-
-function sacar(dados: ISacar): boolean {
-    // TODO: Implementar a lógica seguindo as regras de negócio
-    //
-    // Passos sugeridos:
+      // Passos sugeridos:
     // 1. Buscar a conta pelo contaId
     // 2. Verificar se a conta existe e está ativa
     // 3. Verificar se o valor do saque <= saldo
     // 4. Subtrair o valor do saldo
     // 5. Registrar a movimentação no extrato
 
-    return false
-}
-
-function transferir(dados: ITransferir): boolean {
-    // TODO: Implementar a lógica seguindo as regras de negócio
-    //
+    
     // Passos sugeridos:
     // 1. Buscar conta de origem e destino
     // 2. Verificar se ambas existem e estão ativas
@@ -94,9 +75,79 @@ function transferir(dados: ITransferir): boolean {
     // 6. Descontar valor + taxa da origem e adicionar valor ao destino
     // 7. Registrar movimentação no extrato de ambas as contas
 
-    return false
+
+function depositar(dados: IDepositar): boolean {
+    const conta = contas.find(c => c.id === dados.contaId)
+
+    if (!conta || !conta.ativa) return false
+
+    if (dados.valor < 10) return false
+
+    conta.saldo += dados.valor
+
+    conta.extrato.push({
+        tipo: 'deposito',
+        valor: dados.valor,
+        data: new Date()
+    })
+
+    return true
 }
 
+function sacar(dados: ISacar): boolean {
+    const conta = contas.find(c => c.id === dados.contaId)
+
+    if (!conta || !conta.ativa) return false
+
+    if (dados.valor > conta.saldo) return false
+
+    conta.saldo -= dados.valor
+
+    conta.extrato.push({
+        tipo: 'saque',
+        valor: dados.valor,
+        data: new Date()
+    })
+
+    return true
+}
+
+function transferir(dados: ITransferir): boolean {
+    const origem = contas.find(c => c.id === dados.contaOrigemId)
+    const destino = contas.find(c => c.id === dados.contaDestinoId)
+
+    if (!origem || !destino) return false
+    if (!origem.ativa || !destino.ativa) return false
+
+    if (dados.valor > 5000) return false
+
+    const mesmaBanco = origem.banco === destino.banco
+    const taxa = mesmaBanco ? 0 : 2.5
+
+    const totalDebito = dados.valor + taxa
+
+    if (origem.saldo < totalDebito) return false
+
+    // Atualiza saldos
+    origem.saldo -= totalDebito
+    destino.saldo += dados.valor
+
+    // Extrato origem
+    origem.extrato.push({
+        tipo: 'transferencia_enviada',
+        valor: dados.valor,
+        data: new Date()
+    })
+
+    // Extrato destino
+    destino.extrato.push({
+        tipo: 'transferencia_recebida',
+        valor: dados.valor,
+        data: new Date()
+    })
+
+    return true
+}
 // ==================== FUNÇÕES AUXILIARES ====================
 
 // Use esta função para resetar os dados entre os testes se necessário
