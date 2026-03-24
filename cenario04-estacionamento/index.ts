@@ -71,7 +71,8 @@ function registrarEntrada(dados: IRegistrarEntrada): IResultadoEntrada {
     //
     // Passos sugeridos:
     // 1. Verificar se o veículo está cadastrado (buscar pela placa)
-    // 2. Verificar se há vagas disponíveis (ocupadas < total)
+    const placa = veiculosCadastrados.find(placacerta=>placacerta.placa===dados.placa)   
+     // 2. Verificar se há vagas disponíveis (ocupadas < total)
     // 3. Criar o ticket com id, placa, data de entrada e saída null
     // 4. Adicionar o ticket ao array tickets
     // 5. Incrementar vagas.ocupadas
