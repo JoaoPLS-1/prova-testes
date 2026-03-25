@@ -74,10 +74,44 @@ function calcularPlano(plano: string, personal: boolean): IResultadoPlano {
     // 4. Calcular valor mensal e valor total
     //    - mensal: 1 mês | trimestral: 3 meses | anual: 12 meses
 
+    if (plano !== 'mensal' && plano !== 'trimestral' && plano !== 'anual') {
+
+        return {
+            valorMensal: 0,
+            valorTotal: 0,
+            ehValido: false
+        }
+    }
+
+    let planoOficial = 0
+    let planoPersonal = 0
+    let valorMes = 0
+    let valorFinal = 0
+    if (personal === true) {
+        planoPersonal = 50
+    }
+
+    if (plano === 'mensal') {
+        planoOficial += 99.90
+        valorMes += planoOficial + planoPersonal
+
+    }
+    if (plano === 'trimestral') {
+        planoOficial += 249.90
+        valorMes += (planoOficial / 3)
+        valorFinal = planoOficial + (planoPersonal * 3)
+
+    }
+    if (plano === 'anual') {
+        planoOficial += 899.90
+        valorMes += (planoOficial / 12)
+        valorFinal = planoOficial + (planoPersonal * 12)
+    }
+
     return {
-        valorMensal: 0,
-        valorTotal: 0,
-        ehValido: false
+        valorMensal: valorMes,
+        valorTotal: valorFinal,
+        ehValido: true
     }
 }
 
@@ -92,10 +126,23 @@ function realizarCheckin(checkin: ICheckin): IResultadoCheckin {
     // 5. Verificar se já existe check-in do aluno no mesmo dia
     // 6. Se tudo ok, registrar o check-in no array checkIns
 
-    return {
-        permitido: false,
-        mensagem: ''
+    const alunoBusca = alunos.find(buscaAluno => buscaAluno.id === checkin.alunoId)
+    if (!alunoBusca) {
+        return {
+            permitido: false,
+            mensagem: ''
+        }
+
     }
+        const mensalidadeVencida = alunoBusca?.vencimento >= checkin.horario ? true : false
+    
+
+
+
+        return {
+            permitido: false,
+            mensagem: ''
+        }
 }
 
 function cancelarPlano(alunoId: number): IResultadoCancelamento {
