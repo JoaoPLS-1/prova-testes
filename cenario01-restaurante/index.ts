@@ -1,16 +1,6 @@
 import { validar } from '../framework-teste'
 
-// 🍕 Cenário 01 — Sistema de Pedidos de Restaurante
-//
-// Regras de Negócio:
-// 1. Taxa de entrega: R$ 8,00 fixo
-// 2. Pedido acima de R$ 100,00 (subtotal): entrega grátis
-// 3. Combo (pelo menos 1 prato + 1 bebida + 1 sobremesa): 15% de desconto no subtotal
-// 4. Gorjeta opcional: 10% sobre o subtotal (antes do desconto de combo e antes da taxa)
-// 5. Pedido mínimo para entrega: R$ 25,00 (subtotal, antes de descontos)
-// 6. Máximo de 20 itens (soma das quantidades) por pedido
 
-// ==================== INTERFACES ====================
 
 interface IItemCardapio {
     id: number
@@ -54,26 +44,74 @@ const cardapio: IItemCardapio[] = [
 // ==================== FUNÇÃO A IMPLEMENTAR ====================
 
 function calcularPedido(pedido: IPedido): IResultadoPedido {
-    // TODO: Implementar a lógica seguindo as regras de negócio
-    // 
-    // Passos sugeridos:
-    // 1. Verificar se o pedido é válido (não vazio, dentro do limite de 20 itens, acima do mínimo)
-    // 2. Calcular o subtotal (somar quantidade × preço de cada item usando o cardápio)
-    // 3. Verificar se é combo (tem pelo menos 1 prato + 1 bebida + 1 sobremesa)
-    // 4. Calcular desconto de combo (15% do subtotal) se aplicável
-    // 5. Calcular gorjeta (10% do subtotal, antes de desconto) se solicitada
-    // 6. Calcular taxa de entrega (R$ 8,00 ou grátis se subtotal > R$ 100)
-    // 7. Calcular valor total: subtotal - desconto + gorjeta + taxaEntrega
+    let subtotal = 0
+    let quantidadeTotal = 0
+
+    for (const itemPedido of pedido.itens) {
+        const itemCardapio = cardapio.find(item => item.id === itemPedido.itemId)
+
+        if (itemCardapio) {
+            subtotal += itemCardapio.preco * itemPedido.quantidade
+            quantidadeTotal += itemPedido.quantidade
+        }
+    }
+
+    const pedidoVazio = pedido.itens.length === 0
+    const abaixoDoMinimo = subtotal < 25
+    const acimaDoLimite = quantidadeTotal > 20
+
+    const ehValido = !pedidoVazio && !abaixoDoMinimo && !acimaDoLimite
+
+    if (!ehValido) {
+        return {
+            subtotal,
+            desconto: 0,
+            taxaEntrega: 0,
+            gorjeta: 0,
+            valorTotal: 0,
+            ehValido: false
+        }
+    }
+
+    let temPrato = false
+    let temBebida = false
+    let temSobremesa = false
+
+    for (const itemPedido of pedido.itens) {
+        const itemCardapio = cardapio.find(item => item.id === itemPedido.itemId)
+
+        if (itemCardapio) {
+            if (itemCardapio.categoria === 'prato') {
+                temPrato = true
+            }
+
+            if (itemCardapio.categoria === 'bebida') {
+                temBebida = true
+            }
+
+            if (itemCardapio.categoria === 'sobremesa') {
+                temSobremesa = true
+            }
+        }
+    }
+
+    const ehCombo = temPrato && temBebida && temSobremesa
+    const desconto = ehCombo ? subtotal * 0.15 : 0
+    const valorGorjeta = pedido.gorjeta ? subtotal * 0.10 : 0
+    const taxaEntrega = subtotal > 100 ? 0 : 8
+    const valorTotal = subtotal - desconto + valorGorjeta + taxaEntrega
 
     return {
-        subtotal: 0,
-        desconto: 0,
-        taxaEntrega: 0,
-        gorjeta: 0,
-        valorTotal: 0,
-        ehValido: false
+        subtotal,
+        desconto,
+        taxaEntrega,
+        gorjeta: valorGorjeta,
+        valorTotal,
+        ehValido: true
     }
 }
+
+
 
 // ==================== TESTES ====================
 
