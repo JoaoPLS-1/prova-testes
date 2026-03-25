@@ -120,43 +120,104 @@ function realizarCheckin(checkin: ICheckin): IResultadoCheckin {
     //
     // Passos sugeridos:
     // 1. Buscar o aluno pelo alunoId
-    // 2. Verificar se o aluno está ativo
-    // 3. Verificar se a mensalidade não está vencida (vencimento >= data atual)
-    // 4. Verificar se o horário está entre 6h e 23h
-    // 5. Verificar se já existe check-in do aluno no mesmo dia
-    // 6. Se tudo ok, registrar o check-in no array checkIns
-
-    const alunoBusca = alunos.find(buscaAluno => buscaAluno.id === checkin.alunoId)
-    if (!alunoBusca) {
+        const alunoBusca = checkin.alunoId ? alunos.find(buscaAluno => buscaAluno.id === checkin.alunoId) : null
+     if (!alunoBusca) {
         return {
             permitido: false,
-            mensagem: ''
+            mensagem: 'Aluno não encontrado'
         }
-
     }
-        const mensalidadeVencida = alunoBusca?.vencimento >= checkin.horario ? true : false
-    
-
-
-
+    // 2. Verificar se o aluno está ativo
+    if (!alunoBusca.ativo) {
         return {
             permitido: false,
-            mensagem: ''
+            mensagem: 'Aluno não está ativo'
         }
+    }
+    // 3. Verificar se a mensalidade não está vencida (vencimento >= data atual)
+    const dataAtual = new Date()
+    if (alunoBusca.vencimento < dataAtual) {
+        return {
+            permitido: false,
+            mensagem: 'Mensalidade vencida'
+        }
+    }
+    // 4. Verificar se o horário está entre 6h e 23h
+    const hora = checkin.horario.getHours()
+    if (hora < 6 || hora >= 23) {
+        return {
+            permitido: false,
+            mensagem: 'Horário de check-in fora do permitido (6h às 23h)'
+        }
+    }
+
+
+    
+    // 5. Verificar se já existe check-in do aluno no mesmo dia
+    const dataCheckin = checkin.horario.toISOString().split('T')[0] // extrair data no formato YYYY-MM-DD
+    const checkinExistente = checkIns.find(c => c.alunoId === checkin.alunoId && c.data === dataCheckin)
+    if (checkinExistente) {
+        return {
+            permitido: false,
+            mensagem: 'Check-in já realizado para este aluno no mesmo dia'
+        }
+    }
+    // 6. Se tudo ok, registrar o check-in no array checkIns
+    checkIns.push({ alunoId: checkin.alunoId, data: dataCheckin })
+    // 7. Retornar permitido: true
+    return {
+        permitido: true,
+        mensagem: 'Check-in realizado com sucesso'
+    }
 }
+
 
 function cancelarPlano(alunoId: number): IResultadoCancelamento {
     // TODO: Implementar a lógica seguindo as regras de negócio
     //
+    
     // Passos sugeridos:
     // 1. Buscar o aluno pelo alunoId
+      const alunoBusca = alunoId ? alunos.find(buscaAluno => buscaAluno.id === alunoId) : null
+     if (!alunoBusca) {
+        return {
+            multa: 0,
+            ehValido: false
+        }
+    }   
     // 2. Verificar se o aluno existe e está ativo
-    // 3. Calcular os meses restantes do contrato (do hoje até o vencimento)
-    // 4. Calcular o valor restante (meses restantes × valor mensal do plano)
-    // 5. Multa = 20% do valor restante
-    // 6. Retornar a multa
+        if (!alunoBusca.ativo) { 
+            return {
+                multa: 0,
+                ehValido: false
+            }
+        }
 
-    return {
+    // 3. Calcular os meses restantes do contrato (do hoje até o vencimento)
+        const dataAtual = new Date()
+        const mesesRestantes = Math.ceil((alunoBusca.vencimento.getTime() - dataAtual.getTime()) / (1000 * 60 * 60 * 24 * 30))
+
+    // 4. Calcular o valor restante (meses restantes × valor mensal do plano)
+        let valorMensal = 0
+        if (alunoBusca.plano === 'mensal') {
+            valorMensal = 99.90
+        } else if (alunoBusca.plano === 'trimestral') {
+            valorMensal = 249.90 / 3
+        } else if (alunoBusca.plano === 'anual') {
+            valorMensal = 899.90 / 12
+        }
+        
+        const valorRestante = mesesRestantes * valorMensal  
+
+    // 5. Multa = 20% do valor restante
+        const multa = valorRestante * 0.20
+
+    // 6. Retornar a multa
+        return {
+            multa: multa,
+            ehValido: true
+        }               
+    return {    
         multa: 0,
         ehValido: false
     }
